@@ -1,0 +1,14 @@
+{
+  "java_version": "17",
+  "min_sdk": 24,
+  "target_sdk": 35,
+  "emulator_api": 35,
+  "emulator_target": "google_apis",
+  "emulator_arch": "x86_64",
+  "branches": ["main", "develop"],
+  "remote_testing": {
+    "firebase": false,
+    "browserstack": false,
+    "genymotion": false
+  }
+}
