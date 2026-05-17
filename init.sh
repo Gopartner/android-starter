@@ -20,8 +20,9 @@ if [[ -z "$APP_NAME" ]]; then
   exit 1
 fi
 
-PKG="com.example.$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]')"
+PKG="com.example.$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/-/_/g')"
 DIR="$PWD/$APP_NAME"
+APP_NAME_SAFE="$(echo "$APP_NAME" | sed 's/-/_/g')"
 JAVA_VER="${JAVA_VERSION:-17}"
 API="${TARGET_API:-35}"
 MIN_SDK="${MIN_SDK:-24}"
@@ -163,6 +164,7 @@ dependencies {
   implementation("androidx.appcompat:appcompat:1.7.0")
   implementation("androidx.activity:activity-ktx:1.9.3")
   implementation("com.google.android.material:material:1.12.0")
+  implementation("androidx.constraintlayout:constraintlayout:2.2.1")
 
   testImplementation("junit:junit:4.13.2")
   androidTestImplementation("androidx.test.ext:junit:1.2.1")
@@ -179,7 +181,7 @@ cat > "$DIR/app/src/main/AndroidManifest.xml" << EOF
     android:allowBackup="true"
     android:label="@string/app_name"
     android:supportsRtl="true"
-    android:theme="@style/Theme.$APP_NAME">
+    android:theme="@style/Theme.$APP_NAME_SAFE">
 
     <activity
       android:name=".MainActivity"
@@ -194,24 +196,45 @@ cat > "$DIR/app/src/main/AndroidManifest.xml" << EOF
 </manifest>
 EOF
 
+# --- layout/activity_main.xml ---
+mkdir -p "$DIR/app/src/main/res/layout"
+cat > "$DIR/app/src/main/res/layout/activity_main.xml" << 'LAYOUT_EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:padding="16dp">
+
+  <TextView
+    android:id="@+id/title"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="@string/app_name"
+    android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
+LAYOUT_EOF
+
 # --- MainActivity.kt ---
 cat > "$DIR/app/src/main/java/${PKG//.//}/MainActivity.kt" << EOF
 package $PKG
 
 import android.os.Bundle
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import ${PKG}.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
+  private lateinit var binding: ActivityMainBinding
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-
-    val tv = TextView(this).apply {
-      text = "Hello from $APP_NAME"
-      textSize = 24f
-      setPadding(32, 32, 32, 32)
-    }
-    setContentView(tv)
+    binding = ActivityMainBinding.inflate(layoutInflater)
+    setContentView(binding.root)
   }
 }
 EOF
@@ -228,7 +251,7 @@ EOF
 cat > "$DIR/app/src/main/res/values/themes.xml" << EOF
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <style name="Theme.$APP_NAME" parent="Theme.Material3.Light.NoActionBar">
+  <style name="Theme.$APP_NAME_SAFE" parent="Theme.Material3.DayNight.NoActionBar">
     <item name="colorPrimary">@*android:color/system_primary_light</item>
   </style>
 </resources>
